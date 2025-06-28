@@ -30,7 +30,7 @@ sudo apt-get install -y mongodb-org
 ### 1. Clone and install dependencies
 
 ```bash
-git clone https://github.com/yourusername/clouddrive.git
+git clone https://github.com/End3ymion/clouddrive.git
 cd clouddrive
 npm install
 ```
