@@ -39,7 +39,7 @@ npm install
 
 ```bash
 mkdir mongodb_data
-mongod --dbpath ./mongodb_data
+systemctl start mongodb
 ```
 
 ### 3. Run the application
