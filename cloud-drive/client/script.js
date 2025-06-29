@@ -10,10 +10,11 @@ document.getElementById('loginFormElement').addEventListener('submit', async (e)
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    
+
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem('currentUser', JSON.stringify(data));
+      // Store JWT token
+      localStorage.setItem('authToken', data.token);
       window.location.reload();
     } else {
       document.getElementById('loginError').textContent = data.error || 'Login failed';
@@ -69,7 +70,7 @@ window.showLogin = () => {
 };
 
 window.logout = () => {
-  localStorage.removeItem('currentUser');
+  localStorage.removeItem('authToken');
   window.location.reload();
 };
 
@@ -86,18 +87,16 @@ document.getElementById('fileInput').addEventListener('change', function() {
 window.uploadFiles = async () => {
   const fileInput = document.getElementById('fileInput');
   const files = fileInput.files;
-  const user = JSON.parse(localStorage.getItem('currentUser'));
-  
-  if (!user) return alert('Please login first');
+  const token = localStorage.getItem('authToken');
+
+  if (!token) return alert('Please login first');
   if (files.length === 0) return alert('Select files first');
 
-  // Show upload progress
   const uploadText = document.querySelector('.upload-text');
   const originalText = uploadText.textContent;
   uploadText.textContent = 'Uploading to S3...';
-  
+
   const formData = new FormData();
-  formData.append('userId', user.userId);
   for (let i = 0; i < files.length; i++) {
     formData.append('files', files[i]);
   }
@@ -105,11 +104,12 @@ window.uploadFiles = async () => {
   try {
     const response = await fetch('/api/files', {
       method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
       body: formData
     });
-    
+
     if (response.ok) {
-      alert('Files uploaded successfully to S3!');
+      alert('Files uploaded successfully!');
       fileInput.value = '';
       uploadText.textContent = '📁 Click to upload files';
       loadFiles();
@@ -127,14 +127,14 @@ window.uploadFiles = async () => {
 
 // File Management
 async function loadFiles() {
-  const user = JSON.parse(localStorage.getItem('currentUser'));
-  if (!user) return;
+  const token = localStorage.getItem('authToken');
+  if (!token) return;
 
   try {
-    const response = await fetch(`/api/files/${user.userId}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    const response = await fetch('/api/files', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const files = await response.json();
     renderFiles(files);
   } catch (error) {
@@ -145,12 +145,12 @@ async function loadFiles() {
 
 function renderFiles(files) {
   const grid = document.getElementById('filesGrid');
-  
+
   if (files.length === 0) {
-    grid.innerHTML = '<p class="no-files">No files uploaded yet. Upload some files to get started!</p>';
+    grid.innerHTML = '<p class="no-files">No files uploaded yet.</p>';
     return;
   }
-  
+
   grid.innerHTML = files.map(file => `
     <div class="file-item">
       <div class="file-icon">${getFileIcon(file.type)}</div>
@@ -158,45 +158,75 @@ function renderFiles(files) {
       <div class="file-size">${formatFileSize(file.size)}</div>
       <div class="file-date">${formatDate(file.uploadDate)}</div>
       <div class="file-actions">
-        <button onclick="downloadFile('${file._id}','${file.name}')" class="btn-small btn-download" title="Download from S3">📥 Download</button>
-        <button onclick="deleteFile('${file._id}')" class="btn-small btn-delete" title="Delete from S3">🗑️ Delete</button>
+        <button onclick="downloadFile('${file._id}','${file.name}')" class="btn-small btn-download">📥 Download</button>
+        <button onclick="deleteFile('${file._id}')" class="btn-small btn-delete">🗑️ Delete</button>
       </div>
     </div>
   `).join('');
 }
 
 window.downloadFile = async (fileId, fileName) => {
+  const token = localStorage.getItem('authToken');
+  if (!token) return alert('Please login first');
+
+  // Show loading state
+  const button = event.target;
+  const originalText = button.textContent;
+  button.textContent = '⏳ Downloading...';
+  button.disabled = true;
+
   try {
-    // The server will redirect to a signed S3 URL
-    const downloadUrl = `/api/files/download/${fileId}`;
+    const response = await fetch(`/api/files/download/${fileId}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      alert(error.error || 'Download failed');
+      return;
+    }
+
+    // Get the signed URL from the response
+    const data = await response.json();
     
-    // Create a temporary link and click it
+    // Create invisible anchor element for clean download
     const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.target = '_blank'; // Open in new tab to handle redirects properly
+    link.href = data.downloadUrl;
+    link.download = fileName;
     link.style.display = 'none';
+    
+    // Append, click, and remove immediately
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
     
-    // Note: Due to CORS and redirect handling, the download might open in a new tab
-    console.log('Download initiated for:', fileName);
+    // Clean up after a short delay
+    setTimeout(() => {
+      document.body.removeChild(link);
+    }, 100);
+    
   } catch (error) {
     console.error('Download error:', error);
     alert('Download failed');
+  } finally {
+    // Restore button state
+    button.textContent = originalText;
+    button.disabled = false;
   }
 };
 
 window.deleteFile = async (fileId) => {
-  if (!confirm('Delete this file from S3? This action cannot be undone.')) return;
-  
+  if (!confirm('Delete this file from S3? This cannot be undone.')) return;
+  const token = localStorage.getItem('authToken');
+  if (!token) return alert('Please login first');
+
   try {
     const response = await fetch(`/api/files/${fileId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-    
     if (response.ok) {
-      alert('File deleted successfully from S3!');
+      alert('File deleted successfully!');
       loadFiles();
     } else {
       const error = await response.json();
@@ -215,76 +245,65 @@ function getFileIcon(type) {
   if (type.startsWith('video/')) return '🎥';
   if (type.startsWith('audio/')) return '🎵';
   if (type.includes('pdf')) return '📄';
-  if (type.includes('word') || type.includes('document')) return '📝';
-  if (type.includes('excel') || type.includes('spreadsheet')) return '📊';
-  if (type.includes('powerpoint') || type.includes('presentation')) return '📊';
-  if (type.includes('zip') || type.includes('archive')) return '📦';
+  if (type.includes('word')) return '📝';
+  if (type.includes('excel')) return '📊';
+  if (type.includes('powerpoint')) return '📊';
+  if (type.includes('zip')) return '📦';
   if (type.includes('text')) return '📃';
   return '📁';
 }
 
 function formatFileSize(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  if (!bytes) return '0 B';
+  const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 function formatDate(dateString) {
   const date = new Date(dateString);
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Health check function
+// Health Check
 async function checkServerHealth() {
   try {
     const response = await fetch('/api/health');
     const health = await response.json();
     console.log('Server health:', health);
-    return health;
   } catch (error) {
     console.error('Health check failed:', error);
-    return null;
   }
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-  // Check server health on startup
-  const health = await checkServerHealth();
-  if (health) {
-    console.log(`Connected to S3 bucket: ${health.bucket}`);
-  }
-  
-  const user = JSON.parse(localStorage.getItem('currentUser'));
-  if (user) {
+  await checkServerHealth();
+  const token = localStorage.getItem('authToken');
+  if (token) {
     document.getElementById('authContainer').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
-    document.getElementById('userName').textContent = `Welcome, ${user.name}! (Files stored in S3)`;
+    document.getElementById('userName').textContent = 'Logged in';
     loadFiles();
   }
 });
 
-// Handle drag and drop for file uploads
+// Drag & Drop
 const uploadArea = document.querySelector('.upload-area');
 if (uploadArea) {
   uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
     uploadArea.classList.add('drag-over');
   });
-
   uploadArea.addEventListener('dragleave', () => {
     uploadArea.classList.remove('drag-over');
   });
-
   uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
     uploadArea.classList.remove('drag-over');
-    
     const files = e.dataTransfer.files;
     const fileInput = document.getElementById('fileInput');
     fileInput.files = files;
-    
     if (files.length > 0) {
       document.querySelector('.upload-text').textContent = `${files.length} file(s) selected`;
     }
