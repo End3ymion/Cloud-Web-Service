@@ -30,7 +30,7 @@ sudo apt-get install -y mongodb-org
 ### 1. Clone and install dependencies
 
 ```bash
-git clone https://github.com/yourusername/clouddrive.git
+git clone https://github.com/End3ymion/clouddrive.git
 cd clouddrive
 npm install
 ```
@@ -51,16 +51,4 @@ node server.js
 
 **Access the application at:** http://localhost:3000
 
-## Maintenance
 
-### To reset the database
-
-```bash
-rm -rf mongodb_data/
-mkdir mongodb_data
-```
-
-### To stop the application
-
-1. Press `Ctrl+C` in both terminals (Node and MongoDB)
-2. For Arch system MongoDB: `sudo systemctl stop mongodb`
