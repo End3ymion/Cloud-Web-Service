@@ -18,7 +18,6 @@ yay -S mongodb-bin mongosh-bin  # or use official package
 
 ```bash
 # Install Node.js and npm
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Install MongoDB
