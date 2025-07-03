@@ -43,7 +43,10 @@ mkdir mongodb_data
 mongod --dbpath ./mongodb_data
 ```
 
-### 3. Run the application
+### 3. Configure your .env
+
+
+### 4. Run the application
 
 ```bash
 node server.js

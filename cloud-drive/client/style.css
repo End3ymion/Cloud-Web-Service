@@ -310,3 +310,13 @@ body {
     font-size: 14px;
     margin-top: 5px;
 }
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#userEmail {
+    font-weight: bold;
+    color: #2c3e50;
+}
