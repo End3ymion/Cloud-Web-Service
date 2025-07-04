@@ -117,7 +117,7 @@ wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 mongosh "mongodb://endy@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&retryWrites=false" \
   --tls \
   --tlsCAFile global-bundle.pem \
-  --username endy \
+  --username <insertYourUsername> \
   --password <insertYourPassword>
 ```
 
@@ -129,7 +129,7 @@ MONGODB_URI=mongodb://endy:<insertYourPassword>@mongodb.cluster-cpe4wk80efuk.ap-
 
 **Important:**
 
-* Replace `endy` and `<insertYourPassword>` with your actual username/password.
+* Replace `<insertYourUsername>` and `<insertYourPassword>` with your actual username/password.
 * If you saved the certificate elsewhere, adjust `tlsCAFile` path accordingly.
 
 ---
