@@ -1,8 +1,3 @@
-Good—here’s a **clean, precise, no-fluff version** that includes:
-
-* Those **three exact commands/connection examples** for AWS DocumentDB
-* A clear note that you **must** update `MONGODB_URI` if using DocumentDB
-
 ---
 
 # CloudDrive – AWS S3 File Storage
@@ -114,22 +109,22 @@ wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 2. **Test shell connection:**
 
 ```bash
-mongosh "mongodb://endy@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&retryWrites=false" \
+mongosh "mongodb://<insertYourUsername>@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&retryWrites=false" \
   --tls \
   --tlsCAFile global-bundle.pem \
-  --username endy \
+  --username <insertYourUsername> \
   --password <insertYourPassword>
 ```
 
 3. **Example connection URI (for `.env`):**
 
 ```
-MONGODB_URI=mongodb://endy:<insertYourPassword>@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
+MONGODB_URI=mongodb://<insertYourUsername>:<insertYourPassword>@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
 ```
 
 **Important:**
 
-* Replace `endy` and `<insertYourPassword>` with your actual username/password.
+* Replace `<insertYourUsername>` and `<insertYourPassword>` with your actual username/password.
 * If you saved the certificate elsewhere, adjust `tlsCAFile` path accordingly.
 
 ---
@@ -191,6 +186,72 @@ node server.js
 * Port 80: `http://localhost`
 
 ---
+Sure—here’s the **short and concise** version with only commands and essential notes:
+
+---
+
+## Run as systemd Service
+
+### 1. Create the service file
+
+```bash
+sudo nano /etc/systemd/system/clouddrive.service
+```
+
+Paste:
+
+```ini
+[Unit]
+Description=Cloud Drive Node.js Server
+After=network.target
+
+[Service]
+User=ec2-user
+WorkingDirectory=/home/ec2-user/Cloud-Web-Service/cloud-drive
+ExecStart=/usr/bin/node /home/ec2-user/Cloud-Web-Service/cloud-drive/server.js
+Restart=always
+EnvironmentFile=/home/ec2-user/Cloud-Web-Service/cloud-drive/.env
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+
+# Allow binding to port 80 without root:
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> **Note:** Adjust paths and `User=` as needed.
+
+---
+
+### 2. Reload systemd
+
+```bash
+sudo systemctl daemon-reload
+```
+
+---
+
+### 3. Enable and start
+
+```bash
+sudo systemctl enable clouddrive
+sudo systemctl start clouddrive
+```
+
+---
+
+### 4. Check status and logs
+
+```bash
+sudo systemctl status clouddrive
+journalctl -u clouddrive -f
+```
+
+---
 
 ## Troubleshooting
 
@@ -226,6 +287,3 @@ clouddrive/
 ```
 
 ---
-
-This is fully ready—let me know if you want help with Docker, systemd service files, or Nginx reverse proxy.
-
