@@ -191,6 +191,72 @@ node server.js
 * Port 80: `http://localhost`
 
 ---
+Sure—here’s the **short and concise** version with only commands and essential notes:
+
+---
+
+## Run as systemd Service
+
+### 1. Create the service file
+
+```bash
+sudo nano /etc/systemd/system/clouddrive.service
+```
+
+Paste:
+
+```ini
+[Unit]
+Description=Cloud Drive Node.js Server
+After=network.target
+
+[Service]
+User=ec2-user
+WorkingDirectory=/home/ec2-user/Cloud-Web-Service/cloud-drive
+ExecStart=/usr/bin/node /home/ec2-user/Cloud-Web-Service/cloud-drive/server.js
+Restart=always
+EnvironmentFile=/home/ec2-user/Cloud-Web-Service/cloud-drive/.env
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+
+# Allow binding to port 80 without root:
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> **Note:** Adjust paths and `User=` as needed.
+
+---
+
+### 2. Reload systemd
+
+```bash
+sudo systemctl daemon-reload
+```
+
+---
+
+### 3. Enable and start
+
+```bash
+sudo systemctl enable clouddrive
+sudo systemctl start clouddrive
+```
+
+---
+
+### 4. Check status and logs
+
+```bash
+sudo systemctl status clouddrive
+journalctl -u clouddrive -f
+```
+
+---
 
 ## Troubleshooting
 
