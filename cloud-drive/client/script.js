@@ -101,31 +101,73 @@ window.uploadFiles = async () => {
     const originalText = uploadText.textContent;
     uploadText.textContent = 'Uploading to S3...';
 
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i]);
-    }
-
     try {
-        const response = await fetch('/api/files', {
+        // Step 1: Initiate upload - get presigned URLs
+        const filesData = Array.from(files).map(file => ({
+            name: file.name,
+            size: file.size,
+            type: file.type
+        }));
+
+        const initiateResponse = await fetch('/api/files/initiate-upload', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ files: filesData })
         });
 
-        if (response.ok) {
-            alert('Files uploaded successfully!');
-            fileInput.value = '';
-            uploadText.textContent = '📁 Click to upload files';
-            loadFiles();
-        } else {
-            const error = await response.json();
-            alert(error.error || 'Upload failed');
-            uploadText.textContent = originalText;
+        if (!initiateResponse.ok) {
+            const errorData = await initiateResponse.json();
+            throw new Error(errorData.error || 'Failed to initiate upload');
         }
+
+        const uploadData = await initiateResponse.json();
+
+        // Step 2: Upload files to S3 using presigned URLs
+        const uploadPromises = uploadData.map(async (data, index) => {
+            const file = files[index];
+            
+            const s3Response = await fetch(data.uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                    'Content-Type': file.type
+                }
+            });
+
+            if (!s3Response.ok) {
+                throw new Error(`S3 upload failed for ${file.name}`);
+            }
+
+            // Step 3: Complete upload
+            const completeResponse = await fetch('/api/files/complete-upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fileId: data.fileId })
+            });
+
+            if (!completeResponse.ok) {
+                const errorData = await completeResponse.json();
+                throw new Error(errorData.error || `Failed to complete upload for ${file.name}`);
+            }
+
+            return completeResponse.json();
+        });
+
+        await Promise.all(uploadPromises);
+
+        alert('Files uploaded successfully!');
+        fileInput.value = '';
+        uploadText.textContent = '📁 Click to upload files';
+        loadFiles();
     } catch (error) {
         console.error('Upload error:', error);
-        alert('Server error during upload');
+        alert(error.message || 'Server error during upload');
         uploadText.textContent = originalText;
     }
 };
@@ -195,13 +237,20 @@ window.downloadFile = async (fileId, fileName) => {
         }
 
         const data = await response.json();
+        
+        // Create temporary link and trigger download
         const link = document.createElement('a');
         link.href = data.downloadUrl;
         link.download = fileName;
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
-        setTimeout(() => document.body.removeChild(link), 100);
+        
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(link);
+        }, 100);
+        
     } catch (error) {
         console.error('Download error:', error);
         alert(error.message || 'Download failed');
