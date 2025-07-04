@@ -1,8 +1,3 @@
-Good—here’s a **clean, precise, no-fluff version** that includes:
-
-* Those **three exact commands/connection examples** for AWS DocumentDB
-* A clear note that you **must** update `MONGODB_URI` if using DocumentDB
-
 ---
 
 # CloudDrive – AWS S3 File Storage
@@ -114,7 +109,7 @@ wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 2. **Test shell connection:**
 
 ```bash
-mongosh "mongodb://endy@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&retryWrites=false" \
+mongosh "mongodb://<insertYourUsername>@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&retryWrites=false" \
   --tls \
   --tlsCAFile global-bundle.pem \
   --username <insertYourUsername> \
@@ -124,7 +119,7 @@ mongosh "mongodb://endy@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazon
 3. **Example connection URI (for `.env`):**
 
 ```
-MONGODB_URI=mongodb://endy:<insertYourPassword>@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
+MONGODB_URI=mongodb://<insertYourUsername>:<insertYourPassword>@mongodb.cluster-cpe4wk80efuk.ap-southeast-1.docdb.amazonaws.com:27017/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
 ```
 
 **Important:**
@@ -292,6 +287,3 @@ clouddrive/
 ```
 
 ---
-
-This is fully ready—let me know if you want help with Docker, systemd service files, or Nginx reverse proxy.
-
