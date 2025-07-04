@@ -18,6 +18,33 @@ Secure cloud file storage with user authentication and AWS S3 integration.
 
 ## Prerequisites
 
+Got it. Here’s the updated **Prerequisites** section including **Amazon Linux** setup with the proper MongoDB repo import and install commands, along with Arch and Ubuntu/Debian:
+
+---
+
+## Prerequisites
+
+### Amazon Linux 2
+
+```bash
+sudo yum update -y
+# Import MongoDB GPG key for 6.0 (adjust for 7.0 if needed)
+sudo rpm --import https://pgp.mongodb.com/server-6.0.asc
+
+# Add MongoDB repo
+echo "[mongodb-org-6.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/6.0/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://pgp.mongodb.com/server-6.0.asc" | sudo tee /etc/yum.repos.d/mongodb-org-6.0.repo
+
+# Install mongosh client only
+sudo yum install -y mongodb-mongosh
+
+sudo yum install -y gcc-c++ make nodejs git
+```
+
 ### Arch Linux
 
 ```bash
