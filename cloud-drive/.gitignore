@@ -1,2 +1,4 @@
 mongodb_data/*
 node_modules
+
+tf/.terraform
