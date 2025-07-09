@@ -9,3 +9,8 @@ key_name          = "project1"
 
 # AWS Region
 region = "ap-southeast-1" # or whatever region you're using
+
+# AWS availability zone
+az_a = "ap-southeast-1a"
+az_b = "ap-southeast-1b"
+az_c = "ap-southeast-1c"

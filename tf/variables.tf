@@ -22,3 +22,18 @@ variable "aws_s3_bucket" {
   description = "Globally unique S3 bucket name"
   type        = string
 }
+
+variable "az_a" {
+  description = "AWS availability zone"
+  type        = string
+}
+
+variable "az_b" {
+  description = "AWS availability zone"
+  type        = string
+}
+
+variable "az_c" {
+  description = "AWS availability zone"
+  type        = string
+}
