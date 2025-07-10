@@ -1,47 +1,13 @@
-# === Security Group (in the correct VPC) ===
-resource "aws_security_group" "web_sg" {
-  name        = "web-sg"
-  description = "Allow HTTP and SSH"
-  vpc_id      = aws_vpc.cloud_drive.id
-
-  ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "web-sg"
-  }
-}
-
 # === Launch Template ===
 resource "aws_launch_template" "web_launch_template" {
   name_prefix   = "web-launch-"
-  image_id      = "ami-0a3ece531caa5d49d" # Make sure it's valid in ap-southeast-1
+  image_id      = "ami-0a3ece531caa5d49d" # Replace with latest valid AMI in ap-southeast-1
   instance_type = "t2.micro"
   key_name      = var.key_name
 
   network_interfaces {
     associate_public_ip_address = true
-    security_groups             = [aws_security_group.web_sg.id]
+    security_groups             = [var.custom_sg_id]
   }
 
   tag_specifications {
@@ -66,7 +32,7 @@ resource "aws_lb" "web_alb" {
   name               = "web-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.web_sg.id]
+  security_groups    = [var.custom_sg_id]
   subnets = [
     aws_subnet.public1.id,
     aws_subnet.public2.id,

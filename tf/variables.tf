@@ -4,6 +4,11 @@ variable "key_name" {
   type        = string
 }
 
+variable "custom_sg_id" {
+  description = "ID of the custom security group to use for ALB and EC2"
+  type        = string
+}
+
 # AWS General Config
 variable "region" {
   description = "AWS region to deploy resources"
