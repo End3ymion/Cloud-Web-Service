@@ -3,104 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDrive - File Storage</title>
+    <title>S3cureCloud</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <!-- Authentication Container -->
-    <div id="authContainer" class="auth-container">
-        <!-- Login Form -->
-        <div id="loginForm">
-            <h2>Login to CloudDrive</h2>
-            <form id="loginFormElement">
-                <div class="form-group">
-                    <label for="loginEmail">Email:</label>
-                    <input type="email" id="loginEmail" required>
+    <div id="authContainer">
+        <div id="loginForm" class="auth-container">
+            <div class="auth-form">
+                <div class="auth-header">
+                    <i class="fas fa-cloud"></i>
+                    <h2>Welcome Back</h2>
+                    <p>Sign in to your S3cureCloud account</p>
                 </div>
-                <div class="form-group">
-                    <label for="loginPassword">Password:</label>
-                    <input type="password" id="loginPassword" required>
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+                    <div id="loginError" class="error-message hidden"></div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </form>
+                <div class="auth-divider">
+                    <p>Don't have an account?</p>
+                    <button onclick="showRegister()" class="btn btn-secondary">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
                 </div>
-                <button type="submit" class="btn">Login</button>
-                <button type="button" class="btn btn-secondary" onclick="showRegister()">Create Account</button>
-                <div id="loginError" class="error"></div>
-            </form>
+            </div>
         </div>
 
-        <!-- Register Form -->
-        <div id="registerForm" class="hidden">
-            <h2>Create Account</h2>
-            <form id="registerFormElement">
-                <div class="form-group">
-                    <label for="registerName">Full Name:</label>
-                    <input type="text" id="registerName" required>
+        <div id="registerForm" class="auth-container hidden">
+            <div class="auth-form">
+                <div class="auth-header">
+                    <i class="fas fa-user-plus"></i>
+                    <h2>Create Account</h2>
+                    <p>Join S3cureCloud for secure file storage</p>
                 </div>
-                <div class="form-group">
-                    <label for="registerEmail">Email:</label>
-                    <input type="email" id="registerEmail" required>
+                <form id="registerFormElement">
+                    <div class="form-group">
+                        <label for="registerName">Name</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="registerName" placeholder="Enter your name" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">Email</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="registerEmail" placeholder="Enter your email" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="registerPassword" placeholder="Enter your password" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                        </div>
+                    </div>
+                    <div id="registerError" class="error-message hidden"></div>
+                    <div id="registerSuccess" class="success-message hidden"></div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+                </form>
+                <div class="auth-divider">
+                    <p>Already have an account?</p>
+                    <button onclick="showLogin()" class="btn btn-secondary">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label for="registerPassword">Password:</label>
-                    <input type="password" id="registerPassword" required>
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword">Confirm Password:</label>
-                    <input type="password" id="confirmPassword" required>
-                </div>
-                <button type="submit" class="btn">Create Account</button>
-                <button type="button" class="btn btn-secondary" onclick="showLogin()">Back to Login</button>
-                <div id="registerError" class="error"></div>
-                <div id="registerSuccess" class="success"></div>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- Main Application -->
     <div id="mainApp" class="main-app">
-        <div class="container">
-            <!-- Header -->
-            <div class="header">
-                <div class="logo">☁️ CloudDrive</div>
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-cloud"></i>
+                    <a href="#" onclick="goHome(event)" class="logo-text">S3cureCloud</a>
+                </div>
                 <div class="user-info">
-                    <span id="userName">Welcome, <span id="userEmail"></span>!</span>
-                    <button class="btn" onclick="logout()">Logout</button>
+                    <div class="profile-info" onclick="showProfile()">
+                        <i class="fas fa-user"></i>
+                        <div class="profile-details">
+                            <div class="user-name" id="userName">Welcome!</div>
+                            <div class="user-email" id="userEmail"></div>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="icon-btn logout-btn" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
             </div>
+        </header>
 
-            <!-- Controls -->
-            <div class="controls">
-                <div class="upload-area">
-                    <div class="file-input-wrapper">
-                        <input type="file" id="fileInput" multiple>
+        <div id="profileModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>User Profile</h2>
+                    <button class="icon-btn close-modal" onclick="closeProfileModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="profileName">Name</label>
+                        <input type="text" id="profileName" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileEmail">Email</label>
+                        <input type="email" id="profileEmail" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <main class="main-content">
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" multiple>
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
                         <div class="upload-text">
-                            📁 Click to upload files or drag and drop
+                            <h3>Drop files here or click to upload</h3>
+                            <p>Support for any file type</p>
                         </div>
                     </div>
                 </div>
-                <button class="btn" onclick="uploadFiles()">Upload Selected</button>
-            </div>
+                <div class="upload-controls">
+                    <div class="file-info"></div>
+                    <button id="uploadBtn" class="btn btn-upload disabled" onclick="uploadFiles()" disabled>
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                </div>
+                <div id="progressContainer" class="progress-container hidden">
+                    <div class="progress-header">
+                        <span id="progressText">Uploading files...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                </div>
+            </section>
 
-            <!-- Progress Bar -->
-            <div id="progressContainer" class="progress-container">
-                <div class="progress-bar">
-                    <div id="progressFill" class="progress-fill"></div>
+            <section class="files-section">
+                <div class="section-header">
+                    <div class="section-title" id="sectionTitle">
+                        <i class="fas fa-folder"></i>
+                        <h2>Your Files</h2>
+                    </div>
+                    <div class="section-info">
+                        <div id="fileCount">0 files</div>
+                        <div class="view-controls">
+                            <button id="gridViewBtn" class="icon-btn view-btn active" title="Grid View">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button id="listViewBtn" class="icon-btn view-btn" title="List View">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div id="progressText" class="progress-text">Uploading...</div>
-            </div>
-
-            <!-- Files Container -->
-            <div class="files-container">
-                <div class="files-header">
-                    <span>Your Files</span>
-                    <span id="fileCount">0 files</span>
+                <div class="files-container">
+                    <div id="filesGrid" class="files-grid"></div>
                 </div>
-                <div id="filesGrid" class="files-grid">
-                    <!-- Files will be populated here -->
-                </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
     <script src="script.js"></script>
-</body>
 </html>

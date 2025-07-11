@@ -12,7 +12,6 @@ const crypto = require('crypto');
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// S3 Configuration
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
   credentials: {
@@ -23,17 +22,14 @@ const s3Client = new S3Client({
 
 const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'client')));
 
-// DB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Models
 const User = mongoose.model('User', new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
@@ -50,7 +46,6 @@ const File = mongoose.model('File', new mongoose.Schema({
   status: { type: String, enum: ['pending', 'completed'], default: 'pending' }
 }));
 
-// Helper Functions
 function generateS3Key(userId, originalName) {
   const timestamp = Date.now();
   const randomSuffix = crypto.randomBytes(8).toString('hex');
@@ -61,10 +56,16 @@ function generateS3Key(userId, originalName) {
 }
 
 async function generatePresignedUploadUrl(s3Key, contentType) {
+  if (!contentType) {
+    throw new Error('Content-Type is required');
+  }
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: s3Key,
-    ContentType: contentType
+    ContentType: contentType,
+    Metadata: {
+      'x-amz-meta-uploaded-by': 'clouddrive'
+    }
   });
   return getSignedUrl(s3Client, command, { expiresIn: 3600 });
 }
@@ -86,7 +87,6 @@ async function deleteFromS3(s3Key) {
   await s3Client.send(command);
 }
 
-// Auth Middleware
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -107,12 +107,10 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Auth Routes
 app.post('/api/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -176,7 +174,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// File Routes
 app.post('/api/files/initiate-upload', authMiddleware, async (req, res) => {
   try {
     const { files } = req.body;
@@ -185,15 +182,17 @@ app.post('/api/files/initiate-upload', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'No files provided' });
     }
 
-    // Validate file data
     for (const file of files) {
       if (!file.name || !file.size || !file.type) {
         return res.status(400).json({ error: 'Invalid file data' });
       }
       
-      // File size limit (50MB)
       if (file.size > 50 * 1024 * 1024) {
         return res.status(400).json({ error: `File ${file.name} exceeds 50MB limit` });
+      }
+
+      if (!file.type || file.type === 'application/octet-stream') {
+        console.warn(`Invalid or generic content type for ${file.name}: ${file.type}`);
       }
     }
 
@@ -202,7 +201,6 @@ app.post('/api/files/initiate-upload', authMiddleware, async (req, res) => {
         const s3Key = generateS3Key(req.user.userId, file.name);
         const uploadUrl = await generatePresignedUploadUrl(s3Key, file.type);
 
-        // Create file record in database
         const fileDoc = new File({
           userId: req.user.userId,
           name: file.name,
@@ -228,8 +226,8 @@ app.post('/api/files/initiate-upload', authMiddleware, async (req, res) => {
 
     res.json(uploadData);
   } catch (error) {
-    console.error('Upload initiation error:', error);
-    res.status(500).json({ error: 'Failed to initiate upload' });
+    console.error('Upload initiation error:', error.message);
+    res.status(500).json({ error: `Failed to initiate upload: ${error.message}` });
   }
 });
 
@@ -319,12 +317,10 @@ app.delete('/api/files/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Delete from S3
     try {
       await deleteFromS3(file.s3Key);
     } catch (s3Error) {
       console.error('S3 delete error:', s3Error);
-      // Continue even if S3 delete fails - file record is already deleted
     }
 
     res.json({ 
@@ -337,7 +333,6 @@ app.delete('/api/files/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// User Info Route
 app.get('/api/user', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-password');
@@ -356,7 +351,6 @@ app.get('/api/user', authMiddleware, async (req, res) => {
   }
 });
 
-// Cleanup incomplete uploads (optional - run periodically)
 app.post('/api/files/cleanup', authMiddleware, async (req, res) => {
   try {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -391,18 +385,15 @@ app.post('/api/files/cleanup', authMiddleware, async (req, res) => {
   }
 });
 
-// Client Route (must be last)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client', 'index.html'));
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
