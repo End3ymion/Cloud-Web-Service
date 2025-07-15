@@ -1,3 +1,40 @@
+# === Security Group ====
+resource "aws_security_group" "cloud_drive_sg" {
+  name        = "cloud-drive-sg"
+  description = "Security group for cloud-drive instances"
+  vpc_id      = aws_vpc.cloud_drive.id
+
+  # Inbound rules
+  ingress {
+    description      = "Allow SSH from anywhere"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"] # Replace with your IP for more security
+  }
+
+  ingress {
+    description      = "Allow HTTP from anywhere"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  # Outbound rules
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    description      = "Allow all outbound traffic"
+  }
+
+  tags = {
+    Name = "cloud-drive-sg"
+  }
+}
+
 resource "aws_launch_template" "web_launch_template" {
   name_prefix   = "web-launch-"
   image_id      = "ami-0a3ece531caa5d49d" # Amazon Linux 2 AMI
@@ -70,7 +107,7 @@ EOF
 
   network_interfaces {
     associate_public_ip_address = true
-    security_groups             = [var.custom_sg_id]
+    security_groups             = [aws_security_group.cloud_drive_sg.id]
   }
 
   tag_specifications {
@@ -96,7 +133,7 @@ resource "aws_lb" "web_alb" {
   name               = "web-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [var.custom_sg_id]
+  security_groups    = [aws_security_group.cloud_drive_sg.id]
   subnets = [
     aws_subnet.public1.id,
     aws_subnet.public2.id,

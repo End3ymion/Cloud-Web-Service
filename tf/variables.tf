@@ -4,11 +4,6 @@ variable "key_name" {
   type        = string
 }
 
-variable "custom_sg_id" {
-  description = "ID of the custom security group to use for ALB and EC2"
-  type        = string
-}
-
 # AWS General Config
 variable "region" {
   description = "AWS region to deploy resources"
@@ -17,12 +12,6 @@ variable "region" {
 
 variable "aws_s3_bucket" {
   description = "Globally unique S3 bucket name"
-  type        = string
-}
-
-# Optional (only needed if used elsewhere)
-variable "subnet_id" {
-  description = "Subnet ID for single EC2 instance (not used in ASG setup)"
   type        = string
 }
 
