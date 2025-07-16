@@ -30,3 +30,12 @@ variable "az_c" {
   description = "AWS availability zone C"
   type        = string
 }
+variable "custom_sg_id" {
+  description = "The ID of the custom security group to associate with."
+  type        = string
+}
+
+variable "subnet_id" {
+  description = "The ID of the subnet for deployment."
+  type        = string
+}

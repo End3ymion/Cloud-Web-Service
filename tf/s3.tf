@@ -7,11 +7,19 @@
 resource "aws_s3_bucket" "user_files" {
   bucket        = var.aws_s3_bucket # Use the variable defined in variables.tf
   force_destroy = true              # allows deleting non-empty bucket if needed
-  tags = {
-    Name        = "MyWebAppFileBucket"
-    Environment = "production"
-    Owner       = "vathana"
-    Project     = "UserPortal"
+}
+
+# --- NEW: CORS Configuration for the S3 Bucket ---
+# This allows cross-origin requests from any origin for testing purposes.
+resource "aws_s3_bucket_cors_configuration" "cors_rules" {
+  bucket = aws_s3_bucket.user_files.bucket
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
   }
 }
 
@@ -40,4 +48,3 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "encrypt" {
     }
   }
 }
-
