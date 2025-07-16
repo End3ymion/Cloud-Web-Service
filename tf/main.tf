@@ -34,6 +34,7 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_access_attach" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
+# Data source to look up your manually created .env secret
 data "aws_secretsmanager_secret" "env_file_secret" {
   name = "clouddrive/main/env_file"
 }
@@ -50,10 +51,7 @@ resource "aws_iam_role_policy" "secrets_manager_access" {
         Effect   = "Allow",
         Action   = "secretsmanager:GetSecretValue",
         Resource = [
-          # ARN for the automated connection details secret
           aws_secretsmanager_secret.db_connection_details.arn,
-
-          # ARN for the manually created .env file secret
           data.aws_secretsmanager_secret.env_file_secret.arn
         ]
       }
@@ -73,7 +71,7 @@ resource "aws_security_group" "cloud_drive_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Replace with your IP for more security
+    cidr_blocks = ["0.0.0.0/0"] # For production, restrict this to your IP
   }
 
   ingress {
@@ -96,7 +94,6 @@ resource "aws_security_group" "cloud_drive_sg" {
     Name = "cloud-drive-sg"
   }
 }
-
 # --- EC2 Launch Template ---
 resource "aws_launch_template" "web_launch_template" {
   name_prefix   = "web-launch-"
@@ -123,12 +120,37 @@ enabled=1
 gpgkey=https://pgp.mongodb.com/server-6.0.asc" | sudo tee /etc/yum.repos.d/mongodb-org-6.0.repo
 
 # Install dependencies
-sudo yum install -y mongodb-mongosh gcc-c++ make nodejs git awscli
+sudo yum install -y mongodb-mongosh gcc-c++ make nodejs git awscli amazon-cloudwatch-agent
 git clone https://github.com/End3ymion/Cloud-Web-Service.git /home/ec2-user/Cloud-Web-Service
 cd /home/ec2-user/Cloud-Web-Service
 npm install
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -O /home/ec2-user/Cloud-Web-Service/global-bundle.pem
 
+# CloudWatch Agent Config
+cat <<EOCONF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+{
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/messages",
+            "log_group_name": "/ec2/webserver",
+            "log_stream_name": "{instance_id}"
+          },
+          {
+            "file_path": "/var/log/cloud-init.log",
+            "log_group_name": "/ec2/webserver",
+            "log_stream_name": "{instance_id}"
+          }
+        ]
+      }
+    }
+  }
+}
+EOCONF
+
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 aws secretsmanager get-secret-value --secret-id clouddrive/main/env_file --query SecretString --output text > /home/ec2-user/Cloud-Web-Service/.env
 SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id clouddrive/main/db_connection_details --query SecretString --output text)
 DB_USER=$(jq -r .username <<< "$SECRET_JSON")
